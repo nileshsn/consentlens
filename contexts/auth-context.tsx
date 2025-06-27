@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://consentlens-theta.vercel.app";
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -54,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: {
           full_name: fullName,
         },
+        emailRedirectTo: `${siteUrl}/auth/callback`,
       },
     })
 

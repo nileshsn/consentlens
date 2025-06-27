@@ -24,6 +24,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }: AuthModal
   const [fullName, setFullName] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
 
   const { signIn, signUp } = useAuth()
 
@@ -36,11 +37,12 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }: AuthModal
       if (mode === "signin") {
         const { error } = await signIn(email, password)
         if (error) throw error
+        onClose()
       } else {
         const { error } = await signUp(email, password, fullName)
         if (error) throw error
+        setSuccess(true)
       }
-      onClose()
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -91,92 +93,101 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }: AuthModal
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {mode === "signup" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName" className="text-gray-300">
-                        Full Name
-                      </Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
-                        <Input
-                          id="fullName"
-                          type="text"
-                          placeholder="Enter your full name"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
-                          required
-                        />
+                  {success ? (
+                    <div className="text-green-400 text-center text-sm py-6">
+                      <p className="font-semibold mb-2">Account created!</p>
+                      <p>Please check your email and click the verification link to activate your account.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {mode === "signup" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="fullName" className="text-gray-300">
+                            Full Name
+                          </Label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
+                            <Input
+                              id="fullName"
+                              type="text"
+                              placeholder="Enter your full name"
+                              value={fullName}
+                              onChange={(e) => setFullName(e.target.value)}
+                              className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
+                              required
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="text-gray-300">
+                          Email
+                        </Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
+                          <Input
+                            id="email"
+                            type="email"
+                            placeholder="Enter your email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
+                            required
+                          />
+                        </div>
                       </div>
-                    </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="password" className="text-gray-300">
+                          Password
+                        </Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
+                          <Input
+                            id="password"
+                            type="password"
+                            placeholder="Enter your password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {error && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-red-400 text-sm text-center"
+                        >
+                          {error}
+                        </motion.div>
+                      )}
+
+                      <Button type="submit" className="w-full bg-white hover:bg-gray-100 text-gray-950" disabled={loading}>
+                        {loading ? (
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                            className="w-4 h-4 border-2 border-gray-950 border-t-transparent rounded-full mr-2"
+                          />
+                        ) : null}
+                        {mode === "signin" ? "Sign In" : "Create Account"}
+                      </Button>
+
+                      <div className="text-center">
+                        <button
+                          type="button"
+                          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+                          className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                          {mode === "signin" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                        </button>
+                      </div>
+                    </>
                   )}
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-gray-300">
-                      Email
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-gray-300">
-                      Password
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-red-400 text-sm text-center"
-                    >
-                      {error}
-                    </motion.div>
-                  )}
-
-                  <Button type="submit" className="w-full bg-white hover:bg-gray-100 text-gray-950" disabled={loading}>
-                    {loading ? (
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                        className="w-4 h-4 border-2 border-gray-950 border-t-transparent rounded-full mr-2"
-                      />
-                    ) : null}
-                    {mode === "signin" ? "Sign In" : "Create Account"}
-                  </Button>
-
-                  <div className="text-center">
-                    <button
-                      type="button"
-                      onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-                      className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                    >
-                      {mode === "signin" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-                    </button>
-                  </div>
                 </form>
               </CardContent>
             </Card>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
-import { Settings, FileText, BarChart3, Crown, LogOut, TrendingUp, Clock, Shield, Plus } from "lucide-react"
+import { Settings, FileText, BarChart3, Crown, LogOut, TrendingUp, Clock, Shield, Plus, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/use-toast"
 
 interface UserStats {
   documentsAnalyzed: number
@@ -315,7 +316,7 @@ export function UserProfile({ onNavigateHome }: UserProfileProps) {
             </h1>
           </div>
 
-          <Card className="bg-white border-gray-200 shadow-sm">
+          <Card className="bg-white border-gray-200 shadow-lg">
             <CardContent className="p-8">
               {showSettings === "analytics" && (
                 <div className="space-y-6">
@@ -453,234 +454,188 @@ export function UserProfile({ onNavigateHome }: UserProfileProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600 mt-1">Welcome back, {user.user_metadata?.full_name || "User"}!</p>
+    <div className="bg-gray-50/50 min-h-screen">
+      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        {/* Profile Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="md:flex md:items-center md:justify-between pb-8 border-b border-gray-200"
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center">
+              <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
+                <AvatarFallback className="bg-blue-600 text-white text-lg sm:text-2xl">
+                  {user.user_metadata.full_name ? user.user_metadata.full_name.charAt(0).toUpperCase() : user.email!.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="ml-2 sm:ml-4">
+                <h1 className="text-lg sm:text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                  {user.user_metadata.full_name || "Welcome Back"}
+                </h1>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">{user.email}</p>
+              </div>
             </div>
-            <Button variant="outline" onClick={signOut} className="border-gray-300 text-gray-700 hover:bg-gray-50">
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
+          </div>
+          <div className="mt-2 md:mt-0 flex space-x-2 sm:space-x-3 items-center justify-end">
+            <Button onClick={onNavigateHome} variant="outline" className="bg-white px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300">
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              <span className="hidden xs:inline">Back to Home</span>
+            </Button>
+            <Button onClick={signOut} variant="destructive" className="ml-0 sm:ml-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm">
+              <LogOut className="w-4 h-4 mr-1" />
+              <span className="hidden xs:inline">Logout</span>
             </Button>
           </div>
+        </motion.div>
 
-          {/* Profile Card */}
-          <Card className="bg-white border-gray-200 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="w-16 h-16 border-2 border-gray-200">
-                    <AvatarFallback className="bg-teal-500 text-white text-4xl font-bold flex items-center justify-center w-full h-full">
-                      {user.user_metadata?.full_name?.charAt(0).toUpperCase()
-                        || user.email?.charAt(0).toUpperCase()
-                        || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-1">
-                    <h2 className="text-xl font-semibold text-gray-900">{user.user_metadata?.full_name || "User"}</h2>
-                    <p className="text-gray-600">{user.email}</p>
-                    <Badge className="bg-blue-50 text-blue-700 border-blue-200">
-                      <Crown className="w-3 h-3 mr-1" />
-                      Free Plan
-                    </Badge>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">Member since</p>
-                  <p className="text-gray-900 font-medium">
-                    {new Date(user.created_at).toLocaleDateString("en-US", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Dashboard Content */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
+          {/* Main Column */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Stats Overview */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-              <Card className="bg-white border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-blue-600" />
+              <Card className="bg-white border-gray-200 shadow-lg hover:shadow-xl transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-gray-900 text-base sm:text-lg">Activity Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-center">
+                    <div className="p-2 sm:p-4 bg-gray-50 rounded-lg">
+                      <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.documentsAnalyzed}</p>
+                      <p className="text-xs sm:text-sm text-gray-500">Documents</p>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Documents Analyzed</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.documentsAnalyzed}</p>
+                    <div className="p-2 sm:p-4 bg-gray-50 rounded-lg">
+                      <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.averageComplianceScore.toFixed(0)}%</p>
+                      <p className="text-xs sm:text-sm text-gray-500">Avg. Score</p>
+                    </div>
+                    <div className="p-2 sm:p-4 bg-gray-50 rounded-lg">
+                      <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalRecommendations}</p>
+                      <p className="text-xs sm:text-sm text-gray-500">Recommendations</p>
+                    </div>
+                    <div className="p-2 sm:p-4 bg-gray-50 rounded-lg">
+                      <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.documentsAnalyzed}</p>
+                      <p className="text-xs sm:text-sm text-gray-500">Documents Analyzed</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
 
+            {/* Recent Activity */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <Card className="bg-white border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                      <BarChart3 className="w-6 h-6 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Avg. Compliance Score</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.averageComplianceScore}%</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <Card className="bg-white border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                      <Settings className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Recommendations</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalRecommendations}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="bg-white border-gray-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-gray-900">Recent Activity</CardTitle>
-                <CardDescription className="text-gray-600">Your latest document analyses</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                      className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full"
-                    />
-                  </div>
-                ) : recentDocuments.length === 0 ? (
-                  <div className="text-center py-8 space-y-3">
-                    <FileText className="w-12 h-12 mx-auto text-gray-400" />
-                    <p className="text-gray-600 font-medium">No documents analyzed yet</p>
-                    <p className="text-sm text-gray-500">Start by uploading your first Terms of Service document</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {recentDocuments.map((doc, idx) => (
+              <Card className="bg-white border-gray-200 shadow-lg hover:shadow-xl transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-gray-900 text-base sm:text-lg">Recent Activity</CardTitle>
+                  <CardDescription className="text-gray-600 text-xs sm:text-sm">Your latest analyzed documents</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
                       <motion.div
-                        key={doc.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <FileText className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900 truncate max-w-xs">{doc.title}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Badge className={`text-xs ${getRegionBadgeColor(doc.law_region)}`}>
-                                {doc.law_region.toUpperCase()}
-                              </Badge>
-                              <span className="text-xs text-gray-500">{formatDate(doc.created_at)}</span>
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                        className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full"
+                      />
+                    </div>
+                  ) : recentDocuments.length === 0 ? (
+                    <div className="text-center py-12">
+                      <FileText className="w-12 h-12 text-gray-300 mx-auto" />
+                      <h3 className="mt-4 text-lg font-medium text-gray-900">No documents found</h3>
+                      <p className="mt-1 text-sm text-gray-500">Start by analyzing a new document.</p>
+                      <Button onClick={onNavigateHome} className="mt-6">
+                        Analyze First Document
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {recentDocuments.map((doc, idx) => (
+                        <motion.div
+                          key={doc.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.15 }}
+                          className="flex items-center justify-between p-2 sm:p-4 bg-gray-50/50 rounded-xl hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${getRegionBadgeColor(doc.law_region)}`}>
+                              <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 truncate max-w-[120px] sm:max-w-xs text-xs sm:text-base">{doc.title}</p>
+                              <p className="text-xs sm:text-sm text-gray-500">{formatDate(doc.created_at)}</p>
                             </div>
                           </div>
-                        </div>
-                        {doc.compliance_score && (
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-gray-900">{doc.compliance_score}%</p>
-                            <p className="text-xs text-gray-500">Score</p>
-                          </div>
-                        )}
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card className="bg-white border-gray-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-gray-900">Quick Actions</CardTitle>
-                <CardDescription className="text-gray-600">Common tasks and shortcuts</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button
-                  onClick={() => handleQuickAction("analyze")}
-                  className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Analyze New Document
-                </Button>
-                <Button
-                  onClick={() => handleQuickAction("analytics")}
-                  variant="outline"
-                  className="w-full justify-start border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  View Analytics
-                </Button>
-                <Button
-                  onClick={() => handleQuickAction("privacy")}
-                  variant="outline"
-                  className="w-full justify-start border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Privacy Settings
-                </Button>
-                <Button
-                  onClick={() => handleQuickAction("account")}
-                  variant="outline"
-                  className="w-full justify-start border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Account Settings
-                </Button>
-              </CardContent>
-            </Card>
+                          {doc.compliance_score && (
+                            <div className="text-right">
+                              <p className="text-xs sm:text-sm font-medium text-gray-900">{doc.compliance_score}%</p>
+                              <p className="text-[10px] sm:text-xs text-gray-500">Score</p>
+                            </div>
+                          )}
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
 
-          {/* Usage Insights */}
-          <Card className="bg-white border-gray-200 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Usage Insights</CardTitle>
-              <CardDescription className="text-gray-600">Your analysis patterns and trends</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <Clock className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-blue-900">2.3 min</p>
-                  <p className="text-sm text-blue-700">Avg. Analysis Time</p>
-                </div>
-                <div className="text-center p-4 bg-emerald-50 rounded-lg">
-                  <Shield className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-emerald-900">GDPR</p>
-                  <p className="text-sm text-emerald-700">Most Used Region</p>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <TrendingUp className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-purple-900">+15%</p>
-                  <p className="text-sm text-purple-700">Score Improvement</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+          {/* Side Column */}
+          <div className="space-y-8">
+            {/* Quick Actions */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+              <Card className="bg-white border-gray-200 shadow-lg hover:shadow-xl transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-gray-900 text-base sm:text-lg">Quick Actions</CardTitle>
+                  <CardDescription className="text-gray-600 text-xs sm:text-sm">Common tasks and shortcuts</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      onClick={() => handleQuickAction("analyze")}
+                      className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Analyze New Document
+                    </Button>
+                  </motion.div>
+                  <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      onClick={() => handleQuickAction("analytics")}
+                      variant="outline"
+                      className="w-full justify-start border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      View Analytics
+                    </Button>
+                  </motion.div>
+                  <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      onClick={() => handleQuickAction("privacy")}
+                      variant="outline"
+                      className="w-full justify-start border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Privacy Settings
+                    </Button>
+                  </motion.div>
+                  <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      onClick={() => handleQuickAction("account")}
+                      variant="outline"
+                      className="w-full justify-start border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Account Settings
+                    </Button>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
       </div>
     </div>
   )
