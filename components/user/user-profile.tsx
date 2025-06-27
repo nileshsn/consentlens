@@ -202,23 +202,22 @@ export function UserProfile({ onNavigateHome }: UserProfileProps) {
     setDeleteStatus(null);
     if (!user) return;
     try {
-      // Delete analysis_results
-      const { data: docs } = await supabase.from("documents").select("id").eq("user_id", user.id);
-      const docIds = docs?.map((d: any) => d.id) ?? [];
-      if (docIds.length > 0) {
-        await supabase.from("analysis_results").delete().in("document_id", docIds);
+      // Call secure API route to delete all user data and account
+      const res = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setDeleteStatus("success");
+        setTimeout(() => {
+          signOut();
+          router.push("/");
+        }, 1500);
+      } else {
+        setDeleteStatus("error");
       }
-      // Delete documents
-      await supabase.from("documents").delete().eq("user_id", user.id);
-      // Delete user_profiles
-      await supabase.from("user_profiles").delete().eq("id", user.id);
-      // Delete user from auth
-      await supabase.auth.admin.deleteUser(user.id);
-      setDeleteStatus("success");
-      setTimeout(() => {
-        signOut();
-        router.push("/");
-      }, 1500);
     } catch {
       setDeleteStatus("error");
     } finally {
