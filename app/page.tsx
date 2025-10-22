@@ -71,12 +71,29 @@ function ResultsView({ analysisResult }: { analysisResult: AnalysisResult }) {
       return null;
     }
     console.log('ResultsView: Raw textualAnalysis:', analysisResult.textualAnalysis);
+    
+    // Clean the textualAnalysis string to remove markdown code blocks
+    let cleanText = analysisResult.textualAnalysis.trim();
+    
+    // Remove markdown code block formatting (```json ... ```)
+    if (cleanText.startsWith('```json') && cleanText.endsWith('```')) {
+      cleanText = cleanText.slice(7, -3).trim(); // Remove ```json and ```
+    } else if (cleanText.startsWith('```') && cleanText.endsWith('```')) {
+      cleanText = cleanText.slice(3, -3).trim(); // Remove ``` and ```
+    }
+    
+    // Remove any remaining markdown formatting
+    cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    
+    console.log('ResultsView: Cleaned textualAnalysis:', cleanText);
+    
     try {
-      const parsed = JSON.parse(analysisResult.textualAnalysis);
+      const parsed = JSON.parse(cleanText);
       console.log('ResultsView: Parsed data:', parsed);
       return parsed;
     } catch (e) {
       console.error('ResultsView: Failed to parse textualAnalysis:', e);
+      console.error('ResultsView: Clean text that failed to parse:', cleanText);
       return null;
     }
   };
@@ -243,12 +260,29 @@ export default function ConsentLensApp() {
       return null;
     }
     console.log('Raw textualAnalysis:', result.textualAnalysis);
+    
+    // Clean the textualAnalysis string to remove markdown code blocks
+    let cleanText = result.textualAnalysis.trim();
+    
+    // Remove markdown code block formatting (```json ... ```)
+    if (cleanText.startsWith('```json') && cleanText.endsWith('```')) {
+      cleanText = cleanText.slice(7, -3).trim(); // Remove ```json and ```
+    } else if (cleanText.startsWith('```') && cleanText.endsWith('```')) {
+      cleanText = cleanText.slice(3, -3).trim(); // Remove ``` and ```
+    }
+    
+    // Remove any remaining markdown formatting
+    cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    
+    console.log('Cleaned textualAnalysis:', cleanText);
+    
     try {
-      const parsed = JSON.parse(result.textualAnalysis);
+      const parsed = JSON.parse(cleanText);
       console.log('Parsed data:', parsed);
       return parsed;
     } catch (e) {
       console.error('Failed to parse textualAnalysis:', e);
+      console.error('Clean text that failed to parse:', cleanText);
       return null;
     }
   };

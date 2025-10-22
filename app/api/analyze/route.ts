@@ -206,17 +206,31 @@ Provide detailed analysis considering both explicit statements and implicit impl
 
     const answer = (payload?.choices?.[0]?.message?.content ?? payload?.rawText ?? "").trim()
 
+    // Clean the answer to remove markdown code blocks
+    let cleanAnswer = answer.trim()
+    
+    // Remove markdown code block formatting (```json ... ```)
+    if (cleanAnswer.startsWith('```json') && cleanAnswer.endsWith('```')) {
+      cleanAnswer = cleanAnswer.slice(7, -3).trim() // Remove ```json and ```
+    } else if (cleanAnswer.startsWith('```') && cleanAnswer.endsWith('```')) {
+      cleanAnswer = cleanAnswer.slice(3, -3).trim() // Remove ``` and ```
+    }
+    
+    // Remove any remaining markdown formatting
+    cleanAnswer = cleanAnswer.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+
     let parsed: any
     try {
-      parsed = JSON.parse(answer)
+      parsed = JSON.parse(cleanAnswer)
     } catch {
       // If content is not JSON, return it as a detailed textualAnalysis field (no static fallback)
       console.warn("Groq returned non-JSON analysis, forwarding textualAnalysis to client (no fallback).")
+      console.warn("Clean answer that failed to parse:", cleanAnswer)
       parsed = {
         complianceScore: null,
         riskLevel: "unknown",
         keyPoints: [],
-        textualAnalysis: answer,
+        textualAnalysis: answer, // Keep original for debugging
         recommendations: [],
       }
     }
