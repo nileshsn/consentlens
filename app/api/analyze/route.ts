@@ -84,17 +84,52 @@ export async function POST(req: NextRequest) {
       dpdpa: "DPDPA (India)",
     }
 
-    const prompt = `
-Analyse the following document under ${regionMap[lawRegion] ?? lawRegion}.
-Return strict JSON with keys:
-complianceScore (0-100),
-riskLevel ("low"|"medium"|"high"),
-keyPoints (string[] 5-7 items),
-recommendations (array of {title,description,severity,category} 4-6 items).
+    const prompt = `You are a specialized AI privacy analyst trained in legal document analysis.
+
+Analyze the following document under ${regionMap[lawRegion] ?? lawRegion} compliance requirements.
+Focus on:
+1. Privacy implications
+2. Data handling practices
+3. User rights and consent mechanisms
+4. Security measures
+5. Cross-border data transfers
+6. Vendor/third-party relationships
+
+Return a JSON object with:
+{
+  "complianceScore": number (0-100), // Based on comprehensive evaluation
+  "riskLevel": "low" | "medium" | "high", // Overall risk assessment
+  "keyPoints": string[], // 5-7 most important findings
+  "detailedAnalysis": {
+    "dataCollection": { // What data is collected
+      "required": string[],
+      "optional": string[],
+      "purpose": string
+    },
+    "userRights": string[], // Specific rights granted to users
+    "dataSharingPractices": {
+      "parties": string[],
+      "purposes": string[]
+    },
+    "retentionPolicies": string,
+    "securityMeasures": string[]
+  },
+  "recommendations": [
+    {
+      "title": string,
+      "description": string,
+      "severity": "low" | "medium" | "high",
+      "category": "privacy" | "security" | "rights" | "compliance",
+      "implementationSteps": string[]
+    }
+  ],
+  "complianceGaps": string[] // Specific areas needing improvement
+}
 
 Document:
-"""${content.slice(0, 10_000)}"""
-`
+"""${content.slice(0, 12000)}"""
+
+Provide detailed analysis considering both explicit statements and implicit implications.`
 
     async function callGroq(model: string) {
       return fetch(GROQ_URL, {
