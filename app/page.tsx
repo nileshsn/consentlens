@@ -139,8 +139,9 @@ function ResultsView({ analysisResult }: { analysisResult: AnalysisResult }) {
               </div>
             ))}
             {analysisResult.textualAnalysis && (
-              <div className="prose max-w-none text-gray-700">
-                <pre className="whitespace-pre-wrap">{analysisResult.textualAnalysis}</pre>
+              <div className="bg-gray-50 rounded-lg p-4 border">
+                <div className="text-sm text-gray-600 mb-2 font-medium">Raw Analysis Data:</div>
+                <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-x-auto">{analysisResult.textualAnalysis}</pre>
               </div>
             )}
           </div>
@@ -802,7 +803,7 @@ https://consentlens.com`
             {/* Key Points */}
             <Card className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow">
               <h3 className="text-2xl font-medium text-gray-900 mb-6">Key Findings</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 {analysisResult.keyPoints && analysisResult.keyPoints.length > 0 ? (
                   analysisResult.keyPoints.map((point, idx) => (
                     <div key={idx} className="flex items-start space-x-3">
@@ -813,8 +814,9 @@ https://consentlens.com`
                     </div>
                   ))
                 ) : analysisResult.textualAnalysis ? (
-                  <div className="prose max-w-none text-gray-700">
-                    <pre className="whitespace-pre-wrap">{analysisResult.textualAnalysis}</pre>
+                  <div className="bg-gray-50 rounded-lg p-4 border">
+                    <div className="text-sm text-gray-600 mb-2 font-medium">Raw Analysis Data:</div>
+                    <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-x-auto">{analysisResult.textualAnalysis}</pre>
                   </div>
                 ) : (
                   <p className="text-gray-500">No key findings extracted.</p>
