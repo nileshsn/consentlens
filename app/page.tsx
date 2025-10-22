@@ -66,11 +66,17 @@ function ResultsView({ analysisResult }: { analysisResult: AnalysisResult }) {
 
   // Helper function to parse JSON from textualAnalysis
   const parseTextualAnalysis = () => {
-    if (!analysisResult.textualAnalysis) return null;
+    if (!analysisResult.textualAnalysis) {
+      console.log('ResultsView: No textualAnalysis found:', analysisResult);
+      return null;
+    }
+    console.log('ResultsView: Raw textualAnalysis:', analysisResult.textualAnalysis);
     try {
-      return JSON.parse(analysisResult.textualAnalysis);
+      const parsed = JSON.parse(analysisResult.textualAnalysis);
+      console.log('ResultsView: Parsed data:', parsed);
+      return parsed;
     } catch (e) {
-      console.error('Failed to parse textualAnalysis:', e);
+      console.error('ResultsView: Failed to parse textualAnalysis:', e);
       return null;
     }
   };
@@ -232,9 +238,15 @@ export default function ConsentLensApp() {
 
   // Helper function to parse JSON from textualAnalysis
   const parseTextualAnalysis = (result: AnalysisResult | null) => {
-    if (!result?.textualAnalysis) return null;
+    if (!result?.textualAnalysis) {
+      console.log('No textualAnalysis found:', result);
+      return null;
+    }
+    console.log('Raw textualAnalysis:', result.textualAnalysis);
     try {
-      return JSON.parse(result.textualAnalysis);
+      const parsed = JSON.parse(result.textualAnalysis);
+      console.log('Parsed data:', parsed);
+      return parsed;
     } catch (e) {
       console.error('Failed to parse textualAnalysis:', e);
       return null;
@@ -857,8 +869,11 @@ https://consentlens.com`
               <h3 className="text-2xl font-medium text-gray-900 mb-6">Key Findings</h3>
               <div className="space-y-4">
                 {(() => {
+                  console.log('Main view - analysisResult:', analysisResult);
                   const parsedData = parseTextualAnalysis(analysisResult);
+                  console.log('Main view - parsedData:', parsedData);
                   const keyPoints = analysisResult.keyPoints || parsedData?.keyPoints;
+                  console.log('Main view - keyPoints:', keyPoints);
                   
                   if (keyPoints && keyPoints.length > 0) {
                     return keyPoints.map((point, idx) => (
@@ -880,8 +895,11 @@ https://consentlens.com`
               <h3 className="text-2xl font-medium text-gray-900 mb-6">Recommendations</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {(() => {
+                  console.log('Main view recommendations - analysisResult:', analysisResult);
                   const parsedData = parseTextualAnalysis(analysisResult);
+                  console.log('Main view recommendations - parsedData:', parsedData);
                   const recommendations = analysisResult.recommendations || parsedData?.recommendations;
+                  console.log('Main view recommendations - recommendations:', recommendations);
                   
                   if (recommendations && recommendations.length > 0) {
                     return recommendations.map((rec, idx) => (
