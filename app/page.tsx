@@ -109,76 +109,144 @@ function ResultsView({ analysisResult }: { analysisResult: AnalysisResult }) {
           <h3 className="text-xl font-medium text-gray-900">Compliance Score</h3>
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4">
             <div className="text-5xl font-bold text-gray-900">
-              {analysisResult.complianceScore !== null && analysisResult.complianceScore !== undefined
-                ? `${analysisResult.complianceScore}%`
-                : "—"}
+              {(() => {
+                // Try to parse textualAnalysis as JSON if complianceScore is not available
+                let parsedData = null;
+                if ((analysisResult.complianceScore === null || analysisResult.complianceScore === undefined) && analysisResult.textualAnalysis) {
+                  try {
+                    parsedData = JSON.parse(analysisResult.textualAnalysis);
+                  } catch (e) {
+                    console.error('Failed to parse textualAnalysis for compliance score:', e);
+                  }
+                }
+                
+                const score = analysisResult.complianceScore ?? parsedData?.complianceScore;
+                return score !== null && score !== undefined ? `${score}%` : "—";
+              })()}
             </div>
-            {analysisResult.riskLevel && (
-              <Badge className={`uppercase ${getSeverityColor(analysisResult.riskLevel)}`}>
-                {analysisResult.riskLevel} RISK
-              </Badge>
-            )}
+            {(() => {
+              let parsedData = null;
+              if (!analysisResult.riskLevel && analysisResult.textualAnalysis) {
+                try {
+                  parsedData = JSON.parse(analysisResult.textualAnalysis);
+                } catch (e) {
+                  console.error('Failed to parse textualAnalysis for risk level:', e);
+                }
+              }
+              const riskLevel = analysisResult.riskLevel || parsedData?.riskLevel;
+              return riskLevel && (
+                <Badge className={`uppercase ${getSeverityColor(riskLevel)}`}>
+                  {riskLevel} RISK
+                </Badge>
+              );
+            })()}
           </div>
-          {analysisResult.complianceScore && (
-            <Progress value={analysisResult.complianceScore} className="w-full max-w-md mx-auto h-3" />
-          )}
+          {(() => {
+            let parsedData = null;
+            if ((analysisResult.complianceScore === null || analysisResult.complianceScore === undefined) && analysisResult.textualAnalysis) {
+              try {
+                parsedData = JSON.parse(analysisResult.textualAnalysis);
+              } catch (e) {
+                console.error('Failed to parse textualAnalysis for progress:', e);
+              }
+            }
+            const score = analysisResult.complianceScore ?? parsedData?.complianceScore;
+            return score && (
+              <Progress value={score} className="w-full max-w-md mx-auto h-3" />
+            );
+          })()}
         </div>
       </Card>
 
       {/* Key Findings */}
-      {(analysisResult.keyPoints?.length > 0 || analysisResult.textualAnalysis) && (
-        <Card className="rounded-3xl p-6 sm:p-8">
-          <h3 className="text-2xl font-medium text-gray-900 mb-6">Key Findings</h3>
-          <div className="space-y-4">
-            {analysisResult.keyPoints?.map((point, idx) => (
-              <div key={idx} className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full" />
+      {(() => {
+        // Try to parse textualAnalysis as JSON if keyPoints is not available
+        let parsedData = null;
+        if (!analysisResult.keyPoints && analysisResult.textualAnalysis) {
+          try {
+            parsedData = JSON.parse(analysisResult.textualAnalysis);
+          } catch (e) {
+            console.error('Failed to parse textualAnalysis:', e);
+          }
+        }
+        
+        const keyPoints = analysisResult.keyPoints || parsedData?.keyPoints;
+        const hasKeyPoints = keyPoints && keyPoints.length > 0;
+        const hasTextualAnalysis = analysisResult.textualAnalysis;
+        
+        return (hasKeyPoints || hasTextualAnalysis) && (
+          <Card className="rounded-3xl p-6 sm:p-8">
+            <h3 className="text-2xl font-medium text-gray-900 mb-6">Key Findings</h3>
+            <div className="space-y-4">
+              {hasKeyPoints ? (
+                keyPoints.map((point, idx) => (
+                  <div key={idx} className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                    </div>
+                    <p className="text-gray-700 leading-relaxed">{point}</p>
+                  </div>
+                ))
+              ) : hasTextualAnalysis ? (
+                <div className="bg-gray-50 rounded-lg p-4 border">
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Raw Analysis Data:</div>
+                  <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-x-auto">{analysisResult.textualAnalysis}</pre>
                 </div>
-                <p className="text-gray-700 leading-relaxed">{point}</p>
-              </div>
-            ))}
-            {analysisResult.textualAnalysis && (
-              <div className="bg-gray-50 rounded-lg p-4 border">
-                <div className="text-sm text-gray-600 mb-2 font-medium">Raw Analysis Data:</div>
-                <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-x-auto">{analysisResult.textualAnalysis}</pre>
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
+              ) : null}
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* Recommendations */}
-      {analysisResult.recommendations?.length > 0 && (
-        <Card className="rounded-3xl p-6 sm:p-8">
-          <h3 className="text-2xl font-medium text-gray-900 mb-6">Recommendations</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {analysisResult.recommendations.map((rec, idx) => (
-              <Card 
-                key={idx} 
-                className={`p-6 rounded-2xl ${getSeverityColor(rec.severity)} shadow-md hover:shadow-lg transition-shadow`}
-              >
-                <div className="flex items-start space-x-3">
-                  <div className="mt-1">{getCategoryIcon(rec.category)}</div>
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-gray-900">{rec.title}</h4>
-                    <p className="text-sm text-gray-600">{rec.description}</p>
-                    {rec.implementationSteps && (
-                      <ul className="mt-2 space-y-1">
-                        {rec.implementationSteps.map((step, stepIdx) => (
-                          <li key={stepIdx} className="text-xs text-gray-500">
-                            • {step}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+      {(() => {
+        // Try to parse textualAnalysis as JSON if recommendations is not available
+        let parsedData = null;
+        if (!analysisResult.recommendations && analysisResult.textualAnalysis) {
+          try {
+            parsedData = JSON.parse(analysisResult.textualAnalysis);
+          } catch (e) {
+            console.error('Failed to parse textualAnalysis for recommendations:', e);
+          }
+        }
+        
+        const recommendations = analysisResult.recommendations || parsedData?.recommendations;
+        
+        return recommendations && recommendations.length > 0 && (
+          <Card className="rounded-3xl p-6 sm:p-8">
+            <h3 className="text-2xl font-medium text-gray-900 mb-6">Recommendations</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {recommendations.map((rec, idx) => (
+                <Card 
+                  key={idx} 
+                  className={`p-6 rounded-2xl ${getSeverityColor(rec.severity)} shadow-md hover:shadow-lg transition-shadow`}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className="mt-1">{getCategoryIcon(rec.category)}</div>
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-gray-900">{rec.title}</h4>
+                      <p className="text-sm text-gray-600">{rec.description}</p>
+                      {rec.implementationSteps && rec.implementationSteps.length > 0 && (
+                        <div className="mt-3">
+                          <h5 className="text-xs font-medium text-gray-600 mb-2">Implementation Steps:</h5>
+                          <ul className="space-y-1">
+                            {rec.implementationSteps.map((step, stepIdx) => (
+                              <li key={stepIdx} className="text-xs text-gray-500 flex items-start">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
+                                {step}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </Card>
-      )}
+                </Card>
+              ))}
+            </div>
+          </Card>
+        );
+      })()}
     </div>
   )
 }
@@ -771,13 +839,57 @@ https://consentlens.com`
                 <h3 className="text-xl font-medium text-gray-900">Compliance Score</h3>
                 <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4">
                   <div className="text-5xl font-bold text-gray-900">
-                  {analysisResult.complianceScore !== null && analysisResult.complianceScore !== undefined
-                    ? `${analysisResult.complianceScore}%`
-                    : "—"}
+                    {(() => {
+                      // Try to parse textualAnalysis as JSON if complianceScore is not available
+                      let parsedData = null;
+                      if ((analysisResult.complianceScore === null || analysisResult.complianceScore === undefined) && analysisResult.textualAnalysis) {
+                        try {
+                          parsedData = JSON.parse(analysisResult.textualAnalysis);
+                        } catch (e) {
+                          console.error('Failed to parse textualAnalysis for compliance score:', e);
+                        }
+                      }
+                      
+                      const score = analysisResult.complianceScore ?? parsedData?.complianceScore;
+                      return score !== null && score !== undefined ? `${score}%` : "—";
+                    })()}
+                  </div>
+                  <Badge className={`text-sm ${getSeverityColor(analysisResult.riskLevel || (() => {
+                    let parsedData = null;
+                    if (!analysisResult.riskLevel && analysisResult.textualAnalysis) {
+                      try {
+                        parsedData = JSON.parse(analysisResult.textualAnalysis);
+                      } catch (e) {
+                        console.error('Failed to parse textualAnalysis for risk level:', e);
+                      }
+                    }
+                    return parsedData?.riskLevel || analysisResult.riskLevel;
+                  })())}`}>
+                    {(() => {
+                      let parsedData = null;
+                      if (!analysisResult.riskLevel && analysisResult.textualAnalysis) {
+                        try {
+                          parsedData = JSON.parse(analysisResult.textualAnalysis);
+                        } catch (e) {
+                          console.error('Failed to parse textualAnalysis for risk level:', e);
+                        }
+                      }
+                      const riskLevel = analysisResult.riskLevel || parsedData?.riskLevel;
+                      return riskLevel ? riskLevel.toUpperCase() : "UNKNOWN";
+                    })()} RISK
+                  </Badge>
                 </div>
-                  <Badge className={`text-sm ${getSeverityColor(analysisResult.riskLevel)}`}>{analysisResult.riskLevel.toUpperCase()} RISK</Badge>
-                </div>
-                <Progress value={analysisResult.complianceScore} className="w-full max-w-md mx-auto h-3" />
+                <Progress value={(() => {
+                  let parsedData = null;
+                  if ((analysisResult.complianceScore === null || analysisResult.complianceScore === undefined) && analysisResult.textualAnalysis) {
+                    try {
+                      parsedData = JSON.parse(analysisResult.textualAnalysis);
+                    } catch (e) {
+                      console.error('Failed to parse textualAnalysis for progress:', e);
+                    }
+                  }
+                  return analysisResult.complianceScore ?? parsedData?.complianceScore ?? 0;
+                })()} className="w-full max-w-md mx-auto h-3" />
                 <p className="text-gray-600">Based on {selectedRegion.toUpperCase()} standards</p>
               </div>
             </Card>
@@ -804,44 +916,87 @@ https://consentlens.com`
             <Card className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow">
               <h3 className="text-2xl font-medium text-gray-900 mb-6">Key Findings</h3>
               <div className="space-y-4">
-                {analysisResult.keyPoints && analysisResult.keyPoints.length > 0 ? (
-                  analysisResult.keyPoints.map((point, idx) => (
-                    <div key={idx} className="flex items-start space-x-3">
-                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                {(() => {
+                  // Try to parse textualAnalysis as JSON if keyPoints is not available
+                  let parsedData = null;
+                  if (!analysisResult.keyPoints && analysisResult.textualAnalysis) {
+                    try {
+                      parsedData = JSON.parse(analysisResult.textualAnalysis);
+                    } catch (e) {
+                      console.error('Failed to parse textualAnalysis:', e);
+                    }
+                  }
+                  
+                  const keyPoints = analysisResult.keyPoints || parsedData?.keyPoints;
+                  
+                  if (keyPoints && keyPoints.length > 0) {
+                    return keyPoints.map((point, idx) => (
+                      <div key={idx} className="flex items-start space-x-3">
+                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                        </div>
+                        <p className="text-gray-700 leading-relaxed">{point}</p>
                       </div>
-                      <p className="text-gray-700 leading-relaxed">{point}</p>
-                    </div>
-                  ))
-                ) : analysisResult.textualAnalysis ? (
-                  <div className="bg-gray-50 rounded-lg p-4 border">
-                    <div className="text-sm text-gray-600 mb-2 font-medium">Raw Analysis Data:</div>
-                    <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-x-auto">{analysisResult.textualAnalysis}</pre>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">No key findings extracted.</p>
-                )}
+                    ));
+                  } else if (analysisResult.textualAnalysis) {
+                    return (
+                      <div className="bg-gray-50 rounded-lg p-4 border">
+                        <div className="text-sm text-gray-600 mb-2 font-medium">Raw Analysis Data:</div>
+                        <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-x-auto">{analysisResult.textualAnalysis}</pre>
+                      </div>
+                    );
+                  } else {
+                    return <p className="text-gray-500">No key findings extracted.</p>;
+                  }
+                })()}
               </div>
             </Card>
             {/* Recommendations */}
             <Card className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow">
               <h3 className="text-2xl font-medium text-gray-900 mb-6">Recommendations</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {analysisResult.recommendations && analysisResult.recommendations.length > 0 ? (
-                  analysisResult.recommendations.map((rec, idx) => (
-                     <Card key={idx} className={`p-6 rounded-2xl border ${getSeverityColor(rec.severity)} shadow-md hover:shadow-lg transition-shadow`}>
-                       <div className="flex items-start space-x-3">
-                         <div className="mt-1">{getCategoryIcon(rec.category)}</div>
-                         <div className="space-y-2">
-                           <h4 className="font-medium">{rec.title}</h4>
-                           <p className="text-sm opacity-80 leading-relaxed">{rec.description}</p>
-                         </div>
-                       </div>
-                     </Card>
-                  ))
-                ) : (
-                  <p className="text-gray-500 p-6">No recommendations generated.</p>
-                )}
+                {(() => {
+                  // Try to parse textualAnalysis as JSON if recommendations is not available
+                  let parsedData = null;
+                  if (!analysisResult.recommendations && analysisResult.textualAnalysis) {
+                    try {
+                      parsedData = JSON.parse(analysisResult.textualAnalysis);
+                    } catch (e) {
+                      console.error('Failed to parse textualAnalysis for recommendations:', e);
+                    }
+                  }
+                  
+                  const recommendations = analysisResult.recommendations || parsedData?.recommendations;
+                  
+                  if (recommendations && recommendations.length > 0) {
+                    return recommendations.map((rec, idx) => (
+                      <Card key={idx} className={`p-6 rounded-2xl border ${getSeverityColor(rec.severity)} shadow-md hover:shadow-lg transition-shadow`}>
+                        <div className="flex items-start space-x-3">
+                          <div className="mt-1">{getCategoryIcon(rec.category)}</div>
+                          <div className="space-y-2">
+                            <h4 className="font-medium">{rec.title}</h4>
+                            <p className="text-sm opacity-80 leading-relaxed">{rec.description}</p>
+                            {rec.implementationSteps && rec.implementationSteps.length > 0 && (
+                              <div className="mt-3">
+                                <h5 className="text-xs font-medium text-gray-600 mb-2">Implementation Steps:</h5>
+                                <ul className="space-y-1">
+                                  {rec.implementationSteps.map((step, stepIdx) => (
+                                    <li key={stepIdx} className="text-xs text-gray-500 flex items-start">
+                                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
+                                      {step}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    ));
+                  } else {
+                    return <p className="text-gray-500 p-6">No recommendations generated.</p>;
+                  }
+                })()}
               </div>
             </Card>
           </div>
