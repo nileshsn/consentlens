@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-const MODEL_NAME = "llama3-70b-8192"
+const MODEL_NAME = process.env.GROQ_MODEL ?? "llama3.1-70b-versatile"
 
 const json = (data: unknown, init?: ResponseInit) => NextResponse.json(data, { status: 200, ...init })
 
