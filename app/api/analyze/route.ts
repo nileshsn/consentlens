@@ -6,7 +6,7 @@ import { createServerClient } from "@/lib/supabase"
 /* ------------------------------------------------------------------ */
 const GROQ_API_KEY = process.env.GROQ_API_KEY
 const GROQ_URL = process.env.GROQ_URL ?? "https://api.groq.com/openai/v1/chat/completions"
-const MODEL_NAME = process.env.GROQ_MODEL ?? ""
+const MODEL_NAME = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile"
 const FALLBACK_MODEL = process.env.GROQ_FALLBACK_MODEL ?? MODEL_NAME
 const USE_FALLBACK = process.env.USE_FALLBACK === "true"
 
@@ -210,6 +210,7 @@ Provide detailed analysis considering both explicit statements and implicit impl
       parsed = JSON.parse(answer)
     } catch {
       // If content is not JSON, return it as a detailed textualAnalysis field (no static fallback)
+      console.warn("Groq returned non-JSON analysis, forwarding textualAnalysis to client (no fallback).")
       parsed = {
         complianceScore: null,
         riskLevel: "unknown",

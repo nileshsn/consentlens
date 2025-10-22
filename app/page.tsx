@@ -57,6 +57,7 @@ interface AnalysisResult {
   riskLevel: "low" | "medium" | "high"
   keyPoints: string[]
   recommendations: ActionRecommendation[]
+  textualAnalysis?: string
 }
 
 export default function ConsentLensApp() {
@@ -619,7 +620,11 @@ https://consentlens.com`
               <div className="space-y-4">
                 <h3 className="text-xl font-medium text-gray-900">Compliance Score</h3>
                 <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4">
-                  <div className="text-5xl font-bold text-gray-900">{analysisResult.complianceScore}%</div>
+                  <div className="text-5xl font-bold text-gray-900">
+                  {analysisResult.complianceScore !== null && analysisResult.complianceScore !== undefined
+                    ? `${analysisResult.complianceScore}%`
+                    : "—"}
+                </div>
                   <Badge className={`text-sm ${getSeverityColor(analysisResult.riskLevel)}`}>{analysisResult.riskLevel.toUpperCase()} RISK</Badge>
                 </div>
                 <Progress value={analysisResult.complianceScore} className="w-full max-w-md mx-auto h-3" />
@@ -649,31 +654,43 @@ https://consentlens.com`
             <Card className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow">
               <h3 className="text-2xl font-medium text-gray-900 mb-6">Key Findings</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {analysisResult.keyPoints.map((point, idx) => (
-                  <div key={idx} className="flex items-start space-x-3">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                {analysisResult.keyPoints && analysisResult.keyPoints.length > 0 ? (
+                  analysisResult.keyPoints.map((point, idx) => (
+                    <div key={idx} className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                      </div>
+                      <p className="text-gray-700 leading-relaxed">{point}</p>
                     </div>
-                    <p className="text-gray-700 leading-relaxed">{point}</p>
+                  ))
+                ) : analysisResult.textualAnalysis ? (
+                  <div className="prose max-w-none text-gray-700">
+                    <pre className="whitespace-pre-wrap">{analysisResult.textualAnalysis}</pre>
                   </div>
-                ))}
+                ) : (
+                  <p className="text-gray-500">No key findings extracted.</p>
+                )}
               </div>
             </Card>
             {/* Recommendations */}
             <Card className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-lg hover:shadow-xl transition-shadow">
               <h3 className="text-2xl font-medium text-gray-900 mb-6">Recommendations</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {analysisResult.recommendations.map((rec, idx) => (
-                  <Card key={idx} className={`p-6 rounded-2xl border ${getSeverityColor(rec.severity)} shadow-md hover:shadow-lg transition-shadow`}>
-                    <div className="flex items-start space-x-3">
-                      <div className="mt-1">{getCategoryIcon(rec.category)}</div>
-                      <div className="space-y-2">
-                        <h4 className="font-medium">{rec.title}</h4>
-                        <p className="text-sm opacity-80 leading-relaxed">{rec.description}</p>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                {analysisResult.recommendations && analysisResult.recommendations.length > 0 ? (
+                  analysisResult.recommendations.map((rec, idx) => (
+                     <Card key={idx} className={`p-6 rounded-2xl border ${getSeverityColor(rec.severity)} shadow-md hover:shadow-lg transition-shadow`}>
+                       <div className="flex items-start space-x-3">
+                         <div className="mt-1">{getCategoryIcon(rec.category)}</div>
+                         <div className="space-y-2">
+                           <h4 className="font-medium">{rec.title}</h4>
+                           <p className="text-sm opacity-80 leading-relaxed">{rec.description}</p>
+                         </div>
+                       </div>
+                     </Card>
+                  ))
+                ) : (
+                  <p className="text-gray-500 p-6">No recommendations generated.</p>
+                )}
               </div>
             </Card>
           </div>
