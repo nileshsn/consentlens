@@ -7,8 +7,8 @@ import { createServerClient } from "@/lib/supabase"
 const GROQ_API_KEY = process.env.GROQ_API_KEY
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 // ✅ Use a proper model name, not the API key
-const MODEL_NAME = process.env.GROQ_MODEL ?? "llama3.1-70b-versatile"
-const FALLBACK_MODEL = "llama3.1-70b-versatile" // Update fallback model too
+const MODEL_NAME = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile"
+const FALLBACK_MODEL = "llama-3.3-70b-versatile" // Update fallback model too
 
 // A helper to return a safe JSON response
 const json = (data: unknown, init?: ResponseInit) => NextResponse.json(data, { status: 200, ...init })
