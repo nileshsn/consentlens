@@ -5,10 +5,10 @@ import { createServerClient } from "@/lib/supabase"
 /* 🔧 Config                                                           */
 /* ------------------------------------------------------------------ */
 const GROQ_API_KEY = process.env.GROQ_API_KEY
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-// ✅ Use a proper model name, not the API key
-const MODEL_NAME = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile"
-const FALLBACK_MODEL = "llama-3.3-70b-versatile" // Update fallback model too
+const GROQ_URL = process.env.GROQ_URL ?? "https://api.groq.com/openai/v1/chat/completions"
+const MODEL_NAME = process.env.GROQ_MODEL ?? ""
+const FALLBACK_MODEL = process.env.GROQ_FALLBACK_MODEL ?? MODEL_NAME
+const USE_FALLBACK = process.env.USE_FALLBACK === "true"
 
 // A helper to return a safe JSON response
 const json = (data: unknown, init?: ResponseInit) => NextResponse.json(data, { status: 200, ...init })
@@ -61,23 +61,19 @@ export async function POST(req: NextRequest) {
   try {
     const { content, lawRegion, documentId } = (await req.json()) as AnalysisRequest
 
-    /* -------------------------------------------------------------- */
-    /* 0️⃣ Input validation                                           */
-    /* -------------------------------------------------------------- */
     if (!content || !lawRegion) return json({ error: "Missing content or lawRegion" }, { status: 400 })
 
-    /* -------------------------------------------------------------- */
-    /* 1️⃣ If no API key → fallback                                   */
-    /* -------------------------------------------------------------- */
-    if (!GROQ_API_KEY) {
-      console.warn("⚠️  GROQ_API_KEY missing – returning fallback result")
-      await saveResult(documentId, fallbackResult)
-      return json(fallbackResult)
+    // If no API key or no model configured -> return informative error (unless USE_FALLBACK)
+    if (!GROQ_API_KEY || !MODEL_NAME) {
+      console.warn("GROQ config missing:", { hasKey: !!GROQ_API_KEY, hasModel: !!MODEL_NAME })
+      if (USE_FALLBACK) {
+        console.warn("USE_FALLBACK is true — returning local fallback")
+        if (documentId) await saveResult(documentId, fallbackResult)
+        return json(fallbackResult)
+      }
+      return json({ error: "GROQ_API_KEY or GROQ_MODEL missing. Set environment variables." }, { status: 500 })
     }
 
-    /* -------------------------------------------------------------- */
-    /* 2️⃣  Build & send the Groq request (with retry on 5xx/429)     */
-    /* -------------------------------------------------------------- */
     const regionMap: Record<string, string> = {
       gdpr: "GDPR (EU)",
       ccpa: "CCPA (California)",
@@ -141,11 +137,11 @@ Provide detailed analysis considering both explicit statements and implicit impl
         body: JSON.stringify({
           model,
           messages: [
-            { role: "system", content: "You are a privacy-law assistant. Always answer with valid JSON only." },
+            { role: "system", content: "You are a privacy-law assistant. Answer with JSON when possible, but if not produce a thorough textual analysis." },
             { role: "user", content: prompt },
           ],
-          temperature: 0.3,
-          max_tokens: 1024,
+          temperature: 0.25,
+          max_tokens: 1600,
         }),
       })
     }
@@ -193,29 +189,44 @@ Provide detailed analysis considering both explicit statements and implicit impl
     if (!groqRes || !groqRes.ok) {
       const bodyText = groqRes ? await groqRes.text() : "no response"
       console.error("Groq error after retries:", groqRes?.status, bodyText)
-      await saveResult(documentId, fallbackResult)
-      return json(
-        { ...fallbackResult, fallback: true, groqStatus: groqRes?.status ?? "no_response", groqBody: bodyText },
-        { status: 200 },
-      )
+      if (USE_FALLBACK) {
+        if (documentId) await saveResult(documentId, fallbackResult)
+        return json({ ...fallbackResult, fallback: true, groqStatus: groqRes?.status ?? "no_response", groqBody: bodyText }, { status: 200 })
+      }
+      // Surface the real error to client (non-secret) so frontend can show it
+      return json({ error: "Groq API failed", status: groqRes?.status ?? 500, details: bodyText }, { status: 502 })
     }
 
-    const { choices } = (await groqRes.json()) as any
-    const answer = choices?.[0]?.message?.content?.trim() ?? ""
+    const payload = await groqRes.json().catch(async () => {
+      // If response is not JSON, read text and return it to client
+      const txt = await groqRes.text()
+      return { rawText: txt }
+    })
 
-    let parsed
+    const answer = (payload?.choices?.[0]?.message?.content ?? payload?.rawText ?? "").trim()
+
+    let parsed: any
     try {
       parsed = JSON.parse(answer)
     } catch {
-      console.warn("Groq JSON parse failed – using fallback")
-      parsed = fallbackResult
+      // If content is not JSON, return it as a detailed textualAnalysis field (no static fallback)
+      parsed = {
+        complianceScore: null,
+        riskLevel: "unknown",
+        keyPoints: [],
+        textualAnalysis: answer,
+        recommendations: [],
+      }
     }
 
-    await saveResult(documentId, parsed)
+    if (documentId) {
+      try { await saveResult(documentId, parsed) } catch (e) { console.error("saveResult failed:", e) }
+    }
+
     return json(parsed)
   } catch (err) {
     console.error("Analysis route failed:", err)
-    return json({ error: "Internal error" }, { status: 500 })
+    return json({ error: "Internal error", message: err instanceof Error ? err.message : String(err) }, { status: 500 })
   }
 }
 
