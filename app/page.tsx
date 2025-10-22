@@ -50,6 +50,7 @@ interface ActionRecommendation {
   description: string
   severity: "low" | "medium" | "high"
   category: string
+  implementationSteps?: string[] // optional to avoid "undefined.map" crash
 }
 
 interface AnalysisResult {
@@ -61,67 +62,121 @@ interface AnalysisResult {
 }
 
 function ResultsView({ analysisResult }: { analysisResult: AnalysisResult }) {
-  if (!analysisResult) return null
+  if (!analysisResult) return null;
+
+  // Helper function to get severity color class
+  const getSeverityColor = (severity: string) => {
+    switch (severity?.toLowerCase()) {
+      case "high":
+        return "bg-red-50 text-red-800 border-red-200"
+      case "medium":
+        return "bg-yellow-50 text-yellow-800 border-yellow-200"
+      case "low":
+        return "bg-green-50 text-green-800 border-green-200"
+      default:
+        return "bg-gray-50 text-gray-800 border-gray-200"
+    }
+  }
+
+  // Helper function to get category icon
+  const getCategoryIcon = (category: string) => {
+    switch (category?.toLowerCase()) {
+      case "privacy":
+        return <Lock className="h-4 w-4" />
+      case "security":
+        return <Shield className="h-4 w-4" />
+      case "rights":
+        return <Users className="h-4 w-4" />
+      default:
+        return <Eye className="h-4 w-4" />
+    }
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Compliance Score */}
-      <div className="rounded-lg bg-white p-6 shadow-lg">
-        <div className="text-center">
-          <div className="text-5xl font-bold text-gray-900">
-            {analysisResult.complianceScore !== null ? 
-              `${analysisResult.complianceScore}%` : 
-              "—"}
-          </div>
-          <div className="mt-2 text-sm font-medium uppercase tracking-wider text-gray-500">
-            {analysisResult.riskLevel?.toUpperCase() || "UNKNOWN"} RISK
-          </div>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+      {/* Results Header */}
+      <div className="text-center space-y-4">
+        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+          <CheckCircle className="w-8 h-8 text-emerald-600" />
         </div>
+        <h2 className="text-3xl font-medium text-gray-900">Analysis Complete</h2>
+        <p className="text-gray-600">Here's what we found in your document</p>
       </div>
+
+      {/* Compliance Score Card */}
+      <Card className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-6 sm:p-8 text-center">
+        <div className="space-y-4">
+          <h3 className="text-xl font-medium text-gray-900">Compliance Score</h3>
+          <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="text-5xl font-bold text-gray-900">
+              {analysisResult.complianceScore !== null && analysisResult.complianceScore !== undefined
+                ? `${analysisResult.complianceScore}%`
+                : "—"}
+            </div>
+            {analysisResult.riskLevel && (
+              <Badge className={`uppercase ${getSeverityColor(analysisResult.riskLevel)}`}>
+                {analysisResult.riskLevel} RISK
+              </Badge>
+            )}
+          </div>
+          {analysisResult.complianceScore && (
+            <Progress value={analysisResult.complianceScore} className="w-full max-w-md mx-auto h-3" />
+          )}
+        </div>
+      </Card>
 
       {/* Key Findings */}
       {(analysisResult.keyPoints?.length > 0 || analysisResult.textualAnalysis) && (
-        <div className="rounded-lg bg-white p-6 shadow-lg">
-          <h3 className="mb-4 text-lg font-semibold">Key Findings</h3>
-          {analysisResult.keyPoints?.length > 0 ? (
-            <div className="space-y-4">
-              {analysisResult.keyPoints.map((point, idx) => (
-                <div key={idx} className="flex items-start space-x-3">
-                  <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
-                  <p className="text-gray-600">{point}</p>
+        <Card className="rounded-3xl p-6 sm:p-8">
+          <h3 className="text-2xl font-medium text-gray-900 mb-6">Key Findings</h3>
+          <div className="space-y-4">
+            {analysisResult.keyPoints?.map((point, idx) => (
+              <div key={idx} className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-2 h-2 bg-blue-600 rounded-full" />
                 </div>
-              ))}
-            </div>
-          ) : analysisResult.textualAnalysis ? (
-            <div className="prose max-w-none text-gray-600">
-              {analysisResult.textualAnalysis}
-            </div>
-          ) : null}
-        </div>
+                <p className="text-gray-700 leading-relaxed">{point}</p>
+              </div>
+            ))}
+            {analysisResult.textualAnalysis && (
+              <div className="prose max-w-none text-gray-700">
+                <pre className="whitespace-pre-wrap">{analysisResult.textualAnalysis}</pre>
+              </div>
+            )}
+          </div>
+        </Card>
       )}
 
       {/* Recommendations */}
       {analysisResult.recommendations?.length > 0 && (
-        <div className="rounded-lg bg-white p-6 shadow-lg">
-          <h3 className="mb-4 text-lg font-semibold">Recommendations</h3>
-          <div className="space-y-4">
+        <Card className="rounded-3xl p-6 sm:p-8">
+          <h3 className="text-2xl font-medium text-gray-900 mb-6">Recommendations</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {analysisResult.recommendations.map((rec, idx) => (
-              <div key={idx} className="rounded-lg border border-gray-200 p-4">
-                <h4 className="font-medium text-gray-900">{rec.title}</h4>
-                <p className="mt-1 text-sm text-gray-600">{rec.description}</p>
-                <div className="mt-2">
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    rec.severity === 'high' ? 'bg-red-100 text-red-800' :
-                    rec.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {rec.severity.toUpperCase()}
-                  </span>
+              <Card 
+                key={idx} 
+                className={`p-6 rounded-2xl ${getSeverityColor(rec.severity)} shadow-md hover:shadow-lg transition-shadow`}
+              >
+                <div className="flex items-start space-x-3">
+                  <div className="mt-1">{getCategoryIcon(rec.category)}</div>
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-gray-900">{rec.title}</h4>
+                    <p className="text-sm text-gray-600">{rec.description}</p>
+                    {rec.implementationSteps && (
+                      <ul className="mt-2 space-y-1">
+                        {rec.implementationSteps.map((step, stepIdx) => (
+                          <li key={stepIdx} className="text-xs text-gray-500">
+                            • {step}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   )
@@ -707,7 +762,7 @@ https://consentlens.com`
                 <CheckCircle className="w-8 h-8 text-emerald-600" />
               </div>
               <h2 className="text-3xl font-medium text-gray-900">Analysis Complete</h2>
-              <p className="text-gray-600 px-4">Here's what we found in your document</p>
+              <p className="text-gray-600">Here's what we found in your document</p>
             </div>
             {/* Score Card */}
             <Card className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-6 sm:p-8 text-center shadow-lg hover:shadow-xl transition-shadow">
