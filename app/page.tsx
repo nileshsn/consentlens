@@ -60,6 +60,73 @@ interface AnalysisResult {
   textualAnalysis?: string
 }
 
+function ResultsView({ analysisResult }: { analysisResult: AnalysisResult }) {
+  if (!analysisResult) return null
+
+  return (
+    <div className="space-y-8">
+      {/* Compliance Score */}
+      <div className="rounded-lg bg-white p-6 shadow-lg">
+        <div className="text-center">
+          <div className="text-5xl font-bold text-gray-900">
+            {analysisResult.complianceScore !== null ? 
+              `${analysisResult.complianceScore}%` : 
+              "—"}
+          </div>
+          <div className="mt-2 text-sm font-medium uppercase tracking-wider text-gray-500">
+            {analysisResult.riskLevel?.toUpperCase() || "UNKNOWN"} RISK
+          </div>
+        </div>
+      </div>
+
+      {/* Key Findings */}
+      {(analysisResult.keyPoints?.length > 0 || analysisResult.textualAnalysis) && (
+        <div className="rounded-lg bg-white p-6 shadow-lg">
+          <h3 className="mb-4 text-lg font-semibold">Key Findings</h3>
+          {analysisResult.keyPoints?.length > 0 ? (
+            <div className="space-y-4">
+              {analysisResult.keyPoints.map((point, idx) => (
+                <div key={idx} className="flex items-start space-x-3">
+                  <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
+                  <p className="text-gray-600">{point}</p>
+                </div>
+              ))}
+            </div>
+          ) : analysisResult.textualAnalysis ? (
+            <div className="prose max-w-none text-gray-600">
+              {analysisResult.textualAnalysis}
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* Recommendations */}
+      {analysisResult.recommendations?.length > 0 && (
+        <div className="rounded-lg bg-white p-6 shadow-lg">
+          <h3 className="mb-4 text-lg font-semibold">Recommendations</h3>
+          <div className="space-y-4">
+            {analysisResult.recommendations.map((rec, idx) => (
+              <div key={idx} className="rounded-lg border border-gray-200 p-4">
+                <h4 className="font-medium text-gray-900">{rec.title}</h4>
+                <p className="mt-1 text-sm text-gray-600">{rec.description}</p>
+                <div className="mt-2">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    rec.severity === 'high' ? 'bg-red-100 text-red-800' :
+                    rec.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {rec.severity.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ConsentLensApp() {
   const [processingState, setProcessingState] = useState<ProcessingState>("idle")
   const [selectedRegion, setSelectedRegion] = useState<LawRegion>("gdpr")
@@ -76,6 +143,7 @@ export default function ConsentLensApp() {
   const [copiedToClipboard, setCopiedToClipboard] = useState(false)
   const [recentAnalyses, setRecentAnalyses] = useState<number>(0)
   const [isMobile, setIsMobile] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const { user, loading: authLoading } = useAuth()
 
@@ -384,6 +452,32 @@ https://consentlens.com`
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  const analyzeDocument = async (content: string, lawRegion: string) => {
+    setProcessingState("processing")
+    setError(null)
+    
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, lawRegion })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Analysis failed")
+      }
+
+      const result = await response.json()
+      setAnalysisResult(result)
+      setProcessingState("completed")
+    } catch (err) {
+      console.error("Analysis error:", err)
+      setError(err instanceof Error ? err.message : "Analysis failed")
+      setProcessingState("idle")
+    }
   }
 
   /* ------------------------------------------------------------------ */

@@ -187,14 +187,15 @@ Provide detailed analysis considering both explicit statements and implicit impl
     /* 3️⃣ Handle non-OK responses (after retries)                    */
     /* -------------------------------------------------------------- */
     if (!groqRes || !groqRes.ok) {
-      const bodyText = groqRes ? await groqRes.text() : "no response"
-      console.error("Groq error after retries:", groqRes?.status, bodyText)
-      if (USE_FALLBACK) {
-        if (documentId) await saveResult(documentId, fallbackResult)
-        return json({ ...fallbackResult, fallback: true, groqStatus: groqRes?.status ?? "no_response", groqBody: bodyText }, { status: 200 })
-      }
-      // Surface the real error to client (non-secret) so frontend can show it
-      return json({ error: "Groq API failed", status: groqRes?.status ?? 500, details: bodyText }, { status: 502 })
+      console.error("Groq error:", groqRes?.status, await groqRes?.text())
+      return NextResponse.json({
+        complianceScore: null,
+        riskLevel: "unknown",
+        keyPoints: [],
+        recommendations: [],
+        textualAnalysis: "Analysis temporarily unavailable. Please try again later.",
+        error: "Analysis service unavailable"
+      })
     }
 
     const payload = await groqRes.json().catch(async () => {
