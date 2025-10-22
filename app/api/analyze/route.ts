@@ -218,6 +218,26 @@ Provide detailed analysis considering both explicit statements and implicit impl
     
     // Remove any remaining markdown formatting
     cleanAnswer = cleanAnswer.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+    
+    // Extract only the JSON part (everything before any explanatory text)
+    // Look for the first complete JSON object by finding the last closing brace
+    const jsonStart = cleanAnswer.indexOf('{')
+    if (jsonStart !== -1) {
+      // Find the last closing brace to get the complete JSON object
+      let braceCount = 0
+      let jsonEnd = -1
+      for (let i = jsonStart; i < cleanAnswer.length; i++) {
+        if (cleanAnswer[i] === '{') braceCount++
+        if (cleanAnswer[i] === '}') braceCount--
+        if (braceCount === 0) {
+          jsonEnd = i + 1
+          break
+        }
+      }
+      if (jsonEnd !== -1) {
+        cleanAnswer = cleanAnswer.substring(jsonStart, jsonEnd)
+      }
+    }
 
     let parsed: any
     try {

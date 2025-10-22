@@ -85,6 +85,26 @@ function ResultsView({ analysisResult }: { analysisResult: AnalysisResult }) {
     // Remove any remaining markdown formatting
     cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
     
+    // Extract only the JSON part (everything before any explanatory text)
+    // Look for the first complete JSON object by finding the last closing brace
+    const jsonStart = cleanText.indexOf('{');
+    if (jsonStart !== -1) {
+      // Find the last closing brace to get the complete JSON object
+      let braceCount = 0;
+      let jsonEnd = -1;
+      for (let i = jsonStart; i < cleanText.length; i++) {
+        if (cleanText[i] === '{') braceCount++;
+        if (cleanText[i] === '}') braceCount--;
+        if (braceCount === 0) {
+          jsonEnd = i + 1;
+          break;
+        }
+      }
+      if (jsonEnd !== -1) {
+        cleanText = cleanText.substring(jsonStart, jsonEnd);
+      }
+    }
+    
     console.log('ResultsView: Cleaned textualAnalysis:', cleanText);
     
     try {
@@ -273,6 +293,26 @@ export default function ConsentLensApp() {
     
     // Remove any remaining markdown formatting
     cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    
+    // Extract only the JSON part (everything before any explanatory text)
+    // Look for the first complete JSON object by finding the last closing brace
+    const jsonStart = cleanText.indexOf('{');
+    if (jsonStart !== -1) {
+      // Find the last closing brace to get the complete JSON object
+      let braceCount = 0;
+      let jsonEnd = -1;
+      for (let i = jsonStart; i < cleanText.length; i++) {
+        if (cleanText[i] === '{') braceCount++;
+        if (cleanText[i] === '}') braceCount--;
+        if (braceCount === 0) {
+          jsonEnd = i + 1;
+          break;
+        }
+      }
+      if (jsonEnd !== -1) {
+        cleanText = cleanText.substring(jsonStart, jsonEnd);
+      }
+    }
     
     console.log('Cleaned textualAnalysis:', cleanText);
     
